@@ -1,7 +1,7 @@
-"""CLI: JSONLからインデックスを構築.
+"""CLI: JSON/JSONLからインデックスを構築.
 
 Usage:
-    python scripts/ingest.py --input <jsonl> --output <dir>
+    python scripts/ingest.py --input <file_or_dir> --output <dir>
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from src.store.embedder import Embedder
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Video-RAG: JSONLからインデックスを構築")
-    parser.add_argument("--input", required=True, help="入力JSONLファイルパス")
+    parser.add_argument("--input", required=True, help="入力ファイルまたはディレクトリパス")
     parser.add_argument("--output", required=True, help="出力ディレクトリパス")
     parser.add_argument(
         "--model",

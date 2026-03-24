@@ -12,13 +12,30 @@ from src.models.event import DetectedObject, Event, EventGraph
 
 
 def parse(path: str | Path) -> list[EventGraph]:
-    """ファイルをパースし EventGraph のリストを返す.
+    """ファイルまたはディレクトリをパースし EventGraph のリストを返す.
 
-    拡張子で形式を判定:
+    ディレクトリを渡すと配下の ``.json`` / ``.jsonl`` を全て読み込む.
+    ファイルの場合は拡張子で形式を判定:
     - ``.json``  → 西川形式 (単一JSONに ``clips[]`` 配列)
     - ``.jsonl`` → 従来形式 (1行1 EventGraph)
     """
     path = Path(path)
+
+    if path.is_dir():
+        files = sorted(
+            f for f in path.iterdir() if f.suffix in (".json", ".jsonl")
+        )
+        logger.info("ディレクトリ検出: {} ファイル ({})", len(files), path)
+        graphs: list[EventGraph] = []
+        for f in files:
+            graphs.extend(_parse_file(f))
+        return graphs
+
+    return _parse_file(path)
+
+
+def _parse_file(path: Path) -> list[EventGraph]:
+    """単一ファイルをパース."""
     if path.suffix == ".json":
         return _parse_nishikawa_json(path)
     return _parse_jsonl(path)

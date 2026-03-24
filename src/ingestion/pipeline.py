@@ -28,7 +28,7 @@ def ingest(input_path: str | Path, output_dir: str | Path, embedder: Embedder) -
     input_path = Path(input_path)
 
     # 1. パース
-    logger.info("Step 1/6: JSONLパース中 ({})", input_path.name)
+    logger.info("Step 1/6: パース中 ({})", input_path)
     graphs = parse(input_path)
 
     # 2. グラフ構築
