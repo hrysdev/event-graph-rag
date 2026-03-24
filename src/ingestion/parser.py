@@ -123,6 +123,12 @@ def _parse_nishikawa_json(path: Path) -> list[EventGraph]:
         # ── イベント変換 ──
         events: list[Event] = []
         for evt in events_raw:
+            if not evt.get("agent") or not evt.get("target"):
+                logger.warning(
+                    "イベント {} をスキップ (agent/target が空): {}",
+                    evt.get("event_id"), path.name,
+                )
+                continue
             frame: int = evt["frame"]
             ts = _frame_to_timestamp(
                 frame, first_frame, source_fps, video_start, clip_start,
