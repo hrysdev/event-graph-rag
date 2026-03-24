@@ -90,8 +90,17 @@ def _parse_nishikawa_json(path: Path) -> list[EventGraph]:
 
         meta = clip["clip_metadata"]
         clip_index: int = meta["clip_index"]
-        clip_start = datetime.fromisoformat(meta["start_time"])
-        frame_indices: list[int] = meta["frame_indices"]
+
+        start_time_str = meta.get("start_time", "")
+        if not start_time_str:
+            logger.warning(
+                "クリップ {} をスキップ (start_time が空): {}",
+                clip_index, path.name,
+            )
+            continue
+        clip_start = datetime.fromisoformat(start_time_str)
+
+        frame_indices: list[int] = meta.get("frame_indices", [])
         first_frame = frame_indices[0] if frame_indices else 0
 
         # ── オブジェクト変換 ──
