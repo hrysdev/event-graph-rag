@@ -1,4 +1,4 @@
-# Video-RAG
+# Event Graph RAG
 
 空間イベント記憶の RAG システム。
 
