@@ -55,10 +55,12 @@ def _run_with_streaming(
     def on_chunk(chunk: str) -> None:
         nonlocal accumulated
         accumulated += chunk
-        # <think>...</think> 部分を除いた表示用テキストを更新
-        import re
-        display = re.sub(r"<think>.*?</think>", "", accumulated, flags=re.DOTALL).strip()
-        answer_placeholder.markdown(display)
+        # </think> 以降の部分だけ表示する
+        idx = accumulated.find("</think>")
+        if idx != -1:
+            display = accumulated[idx + len("</think>"):].strip()
+            if display:
+                answer_placeholder.markdown(display)
 
     thinking_text, answer_text, rag_response = run_collecting(
         user_input, history, on_chunk=on_chunk
