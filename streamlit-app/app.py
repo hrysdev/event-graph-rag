@@ -87,7 +87,11 @@ if user_input:
     # 2. 会話履歴を (human_text, ai_text) のタプルリストに変換
     history = _build_history_tuples(st.session_state["messages"])
 
-    # 3. LLM応答をストリーミング表示しながらチェーン実行
+    # 3. ユーザーメッセージを即時表示
+    with st.chat_message("user"):
+        st.write(user_input)
+
+    # 4. LLM応答をストリーミング表示しながらチェーン実行
     with st.chat_message("assistant"):
         try:
             thinking_text, answer_text, rag_response = _run_with_streaming(
@@ -106,7 +110,7 @@ if user_input:
             render_error(Exception("予期しないエラーが発生しました。"))
             st.stop()
 
-    # 4. セッションステートを更新
+    # 5. セッションステートを更新
     st.session_state["messages"].append(
         ChatMessage(
             role="assistant",
