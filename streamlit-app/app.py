@@ -43,22 +43,38 @@ def _run_with_streaming(
     """
     run_collecting を呼び出し、Streamlit のストリーミング表示を行う。
 
+    処理フェーズに応じてアシスタントバブル内のステータスを更新する:
+      - RAG取得中: "🔍 データ取得中..."
+      - 最初のチャンク受信〜</think>まで: "💭 思考中..."
+      - </think>以降: ステータスを消してストリーミング回答を表示
     Thinking の表示ルール:
       show_thinking=True の場合:
-        - st.expander("思考プロセス (Thinking)") を先に表示し、
-          思考テキストが確定したらその中に書き込む。
+        - st.expander("思考プロセス (Thinking)") を表示し、thinking テキストを書き込む。
       answer_text は累積テキストを st.empty() プレースホルダーに随時書き込む。
     """
+    status_placeholder = st.empty()
     answer_placeholder = st.empty()
     accumulated = ""
+    first_chunk = True
+    think_end_idx = -1
+
+    status_placeholder.markdown("🔍 データ取得中...")
 
     def on_chunk(chunk: str) -> None:
-        nonlocal accumulated
+        nonlocal accumulated, first_chunk, think_end_idx
         accumulated += chunk
-        # </think> 以降の部分だけ表示する
-        idx = accumulated.find("</think>")
-        if idx != -1:
-            display = accumulated[idx + len("</think>"):].strip()
+
+        if first_chunk:
+            first_chunk = False
+            status_placeholder.markdown("💭 思考中...")
+
+        if think_end_idx == -1:
+            think_end_idx = accumulated.find("</think>")
+            if think_end_idx != -1:
+                status_placeholder.empty()
+
+        if think_end_idx != -1:
+            display = accumulated[think_end_idx + len("</think>"):].strip()
             if display:
                 answer_placeholder.markdown(display)
 
@@ -66,7 +82,7 @@ def _run_with_streaming(
         user_input, history, on_chunk=on_chunk
     )
 
-    # プレースホルダーをクリアして最終表示はrender_historyに任せる
+    status_placeholder.empty()
     answer_placeholder.empty()
 
     if st.session_state["show_thinking"] and thinking_text:
