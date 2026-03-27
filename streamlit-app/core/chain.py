@@ -1,16 +1,22 @@
-import re
 from collections.abc import Callable, Generator
 
 from core import llm_client, prompt, rag_client
 from models.schema import RAGResponse
 
-THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL)
+THINK_END_TAG = "</think>"
 
 
 def parse_thinking(raw_text: str) -> tuple[str, str]:
-    match = THINK_PATTERN.search(raw_text)
-    thinking_text = match.group(1) if match else ""
-    answer_text = THINK_PATTERN.sub("", raw_text).strip()
+    """
+    モデルは <think> 開きタグを出力せず </think> のみ出力する。
+    </think> をセパレーターとして思考部分と回答部分に分割する。
+    </think> が存在しない場合は thinking_text="" として全文を回答とする。
+    """
+    idx = raw_text.find(THINK_END_TAG)
+    if idx == -1:
+        return "", raw_text.strip()
+    thinking_text = raw_text[:idx].strip()
+    answer_text = raw_text[idx + len(THINK_END_TAG):].strip()
     return thinking_text, answer_text
 
 

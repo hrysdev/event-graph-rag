@@ -43,28 +43,46 @@ def _run_with_streaming(
     """
     run_collecting を呼び出し、Streamlit のストリーミング表示を行う。
 
+    処理フェーズに応じてアシスタントバブル内のステータスを更新する:
+      - RAG取得中: "🔍 データ取得中..."
+      - 最初のチャンク受信〜</think>まで: "💭 思考中..."
+      - </think>以降: ステータスを消してストリーミング回答を表示
     Thinking の表示ルール:
       show_thinking=True の場合:
-        - st.expander("思考プロセス (Thinking)") を先に表示し、
-          思考テキストが確定したらその中に書き込む。
+        - st.expander("思考プロセス (Thinking)") を表示し、thinking テキストを書き込む。
       answer_text は累積テキストを st.empty() プレースホルダーに随時書き込む。
     """
+    status_placeholder = st.empty()
     answer_placeholder = st.empty()
     accumulated = ""
+    first_chunk = True
+    think_end_idx = -1
+
+    status_placeholder.markdown("🔍 データ取得中...")
 
     def on_chunk(chunk: str) -> None:
-        nonlocal accumulated
+        nonlocal accumulated, first_chunk, think_end_idx
         accumulated += chunk
-        # <think>...</think> 部分を除いた表示用テキストを更新
-        import re
-        display = re.sub(r"<think>.*?</think>", "", accumulated, flags=re.DOTALL).strip()
-        answer_placeholder.markdown(display)
+
+        if first_chunk:
+            first_chunk = False
+            status_placeholder.markdown("💭 思考中...")
+
+        if think_end_idx == -1:
+            think_end_idx = accumulated.find("</think>")
+            if think_end_idx != -1:
+                status_placeholder.empty()
+
+        if think_end_idx != -1:
+            display = accumulated[think_end_idx + len("</think>"):].strip()
+            if display:
+                answer_placeholder.markdown(display)
 
     thinking_text, answer_text, rag_response = run_collecting(
         user_input, history, on_chunk=on_chunk
     )
 
-    # プレースホルダーをクリアして最終表示はrender_historyに任せる
+    status_placeholder.empty()
     answer_placeholder.empty()
 
     if st.session_state["show_thinking"] and thinking_text:
@@ -85,7 +103,11 @@ if user_input:
     # 2. 会話履歴を (human_text, ai_text) のタプルリストに変換
     history = _build_history_tuples(st.session_state["messages"])
 
-    # 3. LLM応答をストリーミング表示しながらチェーン実行
+    # 3. ユーザーメッセージを即時表示
+    with st.chat_message("user"):
+        st.write(user_input)
+
+    # 4. LLM応答をストリーミング表示しながらチェーン実行
     with st.chat_message("assistant"):
         try:
             thinking_text, answer_text, rag_response = _run_with_streaming(
@@ -104,7 +126,7 @@ if user_input:
             render_error(Exception("予期しないエラーが発生しました。"))
             st.stop()
 
-    # 4. セッションステートを更新
+    # 5. セッションステートを更新
     st.session_state["messages"].append(
         ChatMessage(
             role="assistant",
