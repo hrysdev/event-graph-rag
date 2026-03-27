@@ -3,14 +3,8 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from models.schema import RAGResponse, VideoEvent, VideoObject
 
 SYSTEM_PROMPT: str = """\
-あなたは動画解析アシスタントです。
-提供された「登場オブジェクト」と「イベントログ」に基づいて、
-ユーザーの質問に正確かつ論理的に回答してください。
-
-ルール:
-- 与えられたデータにない情報を推測・捏造しないこと。
-- 因果関係の推論は、イベントの時系列を根拠として示すこと。
-- 回答は日本語で行うこと。\
+あなたは過去に見られた物体や発生したイベントについて答えるチャットボットです。
+提供された「登場オブジェクト」と「イベントログ」に基づいて、ユーザーの質問に答えてください。\
 """
 
 
